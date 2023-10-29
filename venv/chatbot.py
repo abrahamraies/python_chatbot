@@ -1,6 +1,7 @@
 import openai
 import os
 import spacy
+import numpy as np
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,6 +14,21 @@ respuestas_anteriores = []
 modelo_spacy = spacy.load("es_Core_news_md") #Modelo que procesa el lenguaje natural en español
 palabras_prohibidas = ["palabra1","palabra2"]
 
+
+def similitud_coseno(vec1,vec2): #Los textos se convierten mediante spacy en vectores.
+    superposicion = np.dot(vec1,vec2)
+    magnitud1 = np.linalg.norm(vec1)
+    magnitud2 = np.linalg.norm(vec2)
+    
+    sim_cos = superposicion / (magnitud1 * magnitud2)
+    return sim_cos
+
+def es_relevante(respuesta,entrada,umbral=0.5):
+    entrada_vectorizada = modelo_spacy(entrada).vector
+    respuesta_vectorizada = modelo_spacy(respuesta).vector
+    
+    similitud = similitud_coseno(entrada_vectorizada,respuesta_vectorizada)
+    return similitud >= umbral
 
 def filtrar_lista_negra(texto,lista_negra):
     token = modelo_spacy(texto)
@@ -56,7 +72,12 @@ while True:
     convesacion_historica += prompt
     
     respuesta_gpt = preguntar_chat_gpt(convesacion_historica)
-    print(f"{respuesta_gpt}")
     
-    preguntas_anteriores.append(ingreso_usuario)
-    respuestas_anteriores.append(respuesta_gpt)
+    relevante = es_relevante(respuesta,ingreso_usuario)
+    
+    if relevante:
+        print(f"{respuesta_gpt}")
+        preguntas_anteriores.append(ingreso_usuario)
+        respuestas_anteriores.append(respuesta_gpt)
+    else:
+        print("La respuesta no es relevante")
