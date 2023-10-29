@@ -28,7 +28,7 @@ print(answer_text)
 
 print("***")
 
-
+#spacy separa el texto en tokens
 modelo_spacy = spacy.load("es_core_news_md")
 analisis = modelo_spacy(answer_text)
 
